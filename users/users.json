@@ -1,0 +1,19 @@
+[
+  {
+    "username": "john_doe",
+    "password": "password123"
+  },
+  {
+    "userId": "1748256570381",
+    "username": "john_doe",
+    "password": "password123",
+    "email": "zer@yopmail.com",
+    "createdAt": "2025-05-26T10:49:30.381Z",
+    "updatedAt": "2025-05-26T10:49:30.381Z",
+    "tasks": [],
+    "role": "user",
+    "isActive": true,
+    "lastLogin": "2025-05-26T10:49:30.381Z",
+    "profilePicture": ""
+  }
+]

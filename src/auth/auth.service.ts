@@ -28,17 +28,17 @@ export class AuthService {
   register(loginDto: LoginDto): User {
     const users: User[] = this.getUsers();
     const newUser: User = {
-      userId: Date.now().toString(), // Generate a unique ID
+      userId: Date.now().toString(),
       username: loginDto.username,
       password: loginDto.password,
       email: loginDto.email,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       tasks: [],
-      role: 'user', // Default role
-      isActive: true, // Default status
+      role: 'user',
+      isActive: true,
       lastLogin: new Date().toISOString(),
-      profilePicture: '', // Default empty string
+      profilePicture: '',
     };
     users.push(newUser);
     this.saveUsers(users);

@@ -1,15 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TasksService } from './tasks.service';
 import { getRepositoryToken } from '@mikro-orm/nestjs';
-import { EntityRepository } from '@mikro-orm/postgresql';
+import { EntityRepository, EntityManager } from '@mikro-orm/postgresql';
 import { Task } from './task.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
-import { SqlEntityRepository } from '@mikro-orm/postgresql';
+
 describe('TasksService', () => {
   let service: TasksService;
-  // let repository: EntityRepository<Task>;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let repository: SqlEntityRepository<Task>;
+  let repository: EntityRepository<Task>;
+  let entityManager: EntityManager;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -17,15 +16,23 @@ describe('TasksService', () => {
         TasksService,
         {
           provide: getRepositoryToken(Task),
-          useClass: EntityRepository,
+          useValue: {
+            create: jest.fn(),
+            findOne: jest.fn(),
+            findAll: jest.fn(),
+            getEntityManager: jest.fn().mockReturnValue({
+              persistAndFlush: jest.fn(),
+              flush: jest.fn(),
+              removeAndFlush: jest.fn(),
+            }),
+          },
         },
       ],
     }).compile();
 
     service = module.get<TasksService>(TasksService);
-    repository = module.get<SqlEntityRepository<Task>>(
-      getRepositoryToken(Task),
-    );
+    repository = module.get<EntityRepository<Task>>(getRepositoryToken(Task));
+    entityManager = repository.getEntityManager();
   });
 
   it('should be defined', () => {
@@ -33,16 +40,15 @@ describe('TasksService', () => {
   });
 
   it('should create a task', async () => {
-    const task = new Task();
-    task.title = 'Test Task';
-    task.description = 'Test Description';
-    // jest.spyOn(repository, 'persistAndFlush').mockImplementation(async () => task);
-
     const createTaskDto: CreateTaskDto = {
       title: 'Test Task',
       description: 'Test Description',
     };
-    const result = service.createTask(createTaskDto);
+    const task = new Task();
+    jest.spyOn(repository, 'create').mockReturnValue(task);
+    jest.spyOn(entityManager, 'persistAndFlush').mockResolvedValue(undefined);
+
+    const result = await service.create(createTaskDto);
     expect(result).toEqual(task);
   });
 });

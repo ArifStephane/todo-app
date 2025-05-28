@@ -1,68 +1,50 @@
 import { Injectable } from '@nestjs/common';
-import * as fs from 'fs';
-import * as path from 'path';
+import { InjectRepository } from '@mikro-orm/nestjs';
+import { EntityRepository } from '@mikro-orm/postgresql';
+import { Task } from './task.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
-import { UpdateTaskDto } from './dto/update-task.dto';
-import { Task } from 'src/interfaces/task';
-// export interface Task {
-//   id: string;
-//   userId: string;
-//   title: string;
-//   status: string;
-//   dueDate: string;
-// }
+import { UpdateTaskDto } from './dto/create-task.dto';
 
 @Injectable()
 export class TasksService {
-  private tasksPath: string = path.join(__dirname, 'tasks.json');
+  constructor(
+    @InjectRepository(Task)
+    private readonly taskRepository: EntityRepository<Task>,
+  ) {}
 
-  constructor() {
-    this.ensureTasksFileExists();
+  async findAll(): Promise<Task[]> {
+    return this.taskRepository.findAll();
   }
 
-  private ensureTasksFileExists(): void {
-    if (!fs.existsSync(this.tasksPath)) {
-      fs.mkdirSync(path.dirname(this.tasksPath), { recursive: true });
-      fs.writeFileSync(this.tasksPath, JSON.stringify([]));
+  async findOne(id: number): Promise<Task | null> {
+    return this.taskRepository.findOne(id);
+  }
+
+  async create(createTaskDto: CreateTaskDto): Promise<Task> {
+    const task = this.taskRepository.create({
+      ...createTaskDto,
+      done: false,
+      createdAt: new Date(),
+    });
+    await this.taskRepository.getEntityManager().persistAndFlush(task);
+    return task;
+  }
+
+  async update(id: number, updateTaskDto: UpdateTaskDto): Promise<Task> {
+    const task = await this.taskRepository.findOne(id);
+    if (!task) {
+      throw new Error('Task not found');
     }
+    this.taskRepository.assign(task, updateTaskDto);
+    await this.taskRepository.getEntityManager().flush();
+    return task;
   }
 
-  getTasks(userId: string): Task[] {
-    const data: string = fs.readFileSync(this.tasksPath, 'utf8');
-    const json: Task[] = JSON.parse(data);
-    return json.filter(task => task.userId === userId);
-  }
-
-  createTask(createTaskDto: CreateTaskDto): Task {
-    const data: string = fs.readFileSync(this.tasksPath, 'utf8');
-    const json: Task[] = JSON.parse(data);
-    const newTask: Task = { id: Date.now().toString(), ...createTaskDto };
-    json.push(newTask);
-    fs.writeFileSync(this.tasksPath, JSON.stringify(json, null, 2));
-    return newTask;
-  }
-
-  updateTask(id: string, updateTaskDto: UpdateTaskDto): Task | null {
-    const data: string = fs.readFileSync(this.tasksPath, 'utf8');
-    const json: Task[] = JSON.parse(data);
-    const taskIndex: number = json.findIndex(task => task.id === id);
-    if (taskIndex !== -1) {
-      json[taskIndex] = { ...json[taskIndex], ...updateTaskDto };
-      fs.writeFileSync(this.tasksPath, JSON.stringify(json, null, 2));
-      return json[taskIndex];
+  async remove(id: number): Promise<void> {
+    const task = await this.taskRepository.findOne(id);
+    if (!task) {
+      throw new Error('Task not found');
     }
-    return null;
-  }
-
-  deleteTask(id: string): boolean {
-    const data: string = fs.readFileSync(this.tasksPath, 'utf8');
-    const json: Task[] = JSON.parse(data);
-    const taskIndex: number = json.findIndex(task => task.id === id);
-    if (taskIndex !== -1) {
-      json.splice(taskIndex, 1);
-      fs.writeFileSync(this.tasksPath, JSON.stringify(json, null, 2));
-      return true;
-    }
-    return false;
+    await this.taskRepository.getEntityManager().removeAndFlush(task);
   }
 }

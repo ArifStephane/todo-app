@@ -37,16 +37,16 @@ services:
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - .:/usr/src/app
-      - node_modules:/usr/src/app/node_modules
+    # volumes:
+      # - .:/usr/src/app
+      # - node_modules:/usr/src/app/node_modules
     command: ["yarn", "start:dev"]
     networks:
       - app-network
 
 volumes:
   postgres_data:
-  node_modules:
+  # node_modules:
 
 networks:
   app:
